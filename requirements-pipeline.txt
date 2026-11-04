@@ -1,0 +1,7 @@
+# Dependencias del procesamiento local (no van a producción)
+-r requirements.txt
+polars==2.1.0
+nltk==3.10.3
+langdetect==1.0.9
+pypdf==6.21.4
+pytest

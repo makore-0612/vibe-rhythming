@@ -1,0 +1,9 @@
+# Solo lo que corre en producción (Streamlit Community Cloud)
+streamlit==1.58.0
+numpy==2.4.6
+scipy==1.18.0
+pandas==3.0.3
+pyarrow==24.0.0
+scikit-learn==1.9.1
+plotly==7.1.0
+segno==1.6.6

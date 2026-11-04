@@ -1,0 +1,50 @@
+{
+ "n_origenes": 2000,
+ "n_pares": 3885,
+ "n_catalogo": 25006,
+ "resultados": {
+  "solo letra": {
+   "aciertos@10": 0.0541,
+   "aciertos@50": 0.0793,
+   "aciertos@100": 0.0919,
+   "rango_mediano": 6666,
+   "percentil_medio": 0.6649
+  },
+  "solo etiquetas": {
+   "aciertos@10": 0.5905,
+   "aciertos@50": 0.6118,
+   "aciertos@100": 0.6211,
+   "rango_mediano": 4,
+   "percentil_medio": 0.9126
+  },
+  "solo audio": {
+   "aciertos@10": 0.775,
+   "aciertos@50": 0.9112,
+   "aciertos@100": 0.9511,
+   "rango_mediano": 6,
+   "percentil_medio": 0.996
+  },
+  "solo usos": {
+   "aciertos@10": 0.0,
+   "aciertos@50": 0.0031,
+   "aciertos@100": 0.0175,
+   "rango_mediano": 12503,
+   "percentil_medio": 0.6715
+  },
+  "mezcla pareja": {
+   "aciertos@10": 0.6723,
+   "aciertos@50": 0.773,
+   "aciertos@100": 0.8255,
+   "rango_mediano": 3,
+   "percentil_medio": 0.9924
+  },
+  "azar": {
+   "aciertos@10": 0.0004,
+   "aciertos@50": 0.002,
+   "aciertos@100": 0.004,
+   "rango_mediano": 12503,
+   "percentil_medio": 0.5
+  }
+ },
+ "nota": "Similar Songs es una referencia externa de origen desconocido, no una verdad."
+}

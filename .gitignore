@@ -1,0 +1,25 @@
+# Nunca se suben: derechos de autor y tamaño
+data/raw/
+data/intermedio/
+docs/capitulo4.pdf
+docs/guion.pdf
+
+# Python
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+venv/
+
+# Streamlit
+.streamlit/secrets.toml
+
+# Capturas de pruebas
+tests/capturas/
+
+# Todo lo relacionado con Claude
+CLAUDE*.md
+**/CLAUDE*.md
+.claude/
+**/.claude/
+.mcp.json
