@@ -5,14 +5,51 @@ Recursos compartidos entre sesiones (una copia por proceso).
 import numpy as np
 import streamlit as st
 
-from src.datos import cargar_modelo
+from src import config as C
+from src import datos
 from src.motor import recomendar
 
+# Si cambia cualquiera de estos archivos (por ejemplo, tras un push), el modelo se recarga.
+ARCHIVOS_MODELO = [C.RAIZ / "src" / "datos.py", C.RAIZ / "src" / "features.py", C.RAIZ / "src" / "config.py",
+                   C.RUTA_PALABRAS_OCULTAS, C.RUTA_CATALOGO, C.RUTA_CONTEOS, C.RUTA_ETIQUETAS, C.RUTA_USOS,
+                   C.RUTA_VOCAB]
 
-@st.cache_resource(show_spinner="Afinando el catálogo…")
+
+def firma_modelo():
+    """
+    Resume la versión del código y de los datos del modelo con sus fechas de modificación.
+
+    inputs:
+    -------
+    (ninguno)
+
+    outputs
+    -------
+    firma (tuple): pares (archivo, fecha de modificación en ns); 0 si el archivo falta.
+    """
+    return tuple((p.name, p.stat().st_mtime_ns if p.exists() else 0) for p in ARCHIVOS_MODELO)
+
+
+@st.cache_resource(show_spinner="Afinando el catálogo…", max_entries=1)
+def _modelo_por_version(firma):
+    """
+    Carga el modelo para una versión dada; max_entries=1 libera la versión anterior.
+
+    inputs:
+    -------
+    firma (tuple): salida de firma_modelo; solo sirve como llave del caché.
+
+    outputs
+    -------
+    M (dict): modelo de src.datos.cargar_modelo.
+    """
+    datos.cargar_modelo.cache_clear()
+    return datos.cargar_modelo()
+
+
 def modelo():
     """
-    Carga el modelo una sola vez por proceso, compartido entre sesiones.
+    Devuelve el modelo compartido entre sesiones, recargándolo si cambió el código o los datos.
 
     inputs:
     -------
@@ -22,7 +59,7 @@ def modelo():
     -------
     M (dict): modelo de src.datos.cargar_modelo.
     """
-    return cargar_modelo()
+    return _modelo_por_version(firma_modelo())
 
 
 @st.cache_data(max_entries=150, show_spinner=False)
