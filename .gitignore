@@ -1,8 +1,7 @@
 # Nunca se suben: derechos de autor y tamaño
 data/raw/
 data/intermedio/
-docs/capitulo4.pdf
-docs/guion.pdf
+docs/
 
 # Python
 __pycache__/
