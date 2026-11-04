@@ -103,10 +103,45 @@ def recorrer(navegador, nombre, ancho, alto):
     captura("5_laboratorio", completa=True)
     pagina.get_by_text("¿Qué te delata?").first.click()
     captura("5b_delata", completa=True)
+    pagina.get_by_text("Mezcladora").first.click()
+    esperar(pagina, 2000)
+    pagina.get_by_role("button", name="Solo audio").click()
+    captura("5c_mezcladora", completa=True)
+    pagina.goto(URL + "/comparador" + (pagina.url[pagina.url.find("?"):] if "?" in pagina.url else ""))
+    esperar(pagina, 4000)
+    captura("7_comparador", completa=True)
     pagina.goto(URL + "/capitulo")
     captura("6_capitulo", completa=True)
     pagina.close()
     return fallas
+
+
+def votos_entre_navegadores(navegador):
+    """
+    Vota desde un contexto de navegador y comprueba que el otro ve el voto.
+
+    inputs:
+    -------
+    navegador (playwright.sync_api.Browser): navegador abierto.
+
+    outputs
+    -------
+    fallas (list): errores encontrados.
+    """
+    a = navegador.new_context(viewport={"width": 1280, "height": 1600}).new_page()
+    b = navegador.new_context(viewport={"width": 1280, "height": 1600}).new_page()
+    for p in (a, b):
+        p.goto(URL + "/comparador")
+        p.wait_for_selector("text=¿Qué algoritmo te recomendó mejor?", timeout=60000)
+        esperar(p, 1500)
+    antes = b.locator("text=Resultados en vivo").first.text_content()
+    a.get_by_role("button", name="Naive Bayes").last.click()
+    esperar(a, 1000)
+    b.wait_for_timeout(5000)  # el fragmento se refresca cada 3 s
+    despues = b.locator("text=Resultados en vivo").first.text_content()
+    b.screenshot(path=str(DIR / "votos_navegador_b.png"))
+    print("votos:", antes, "→", despues)
+    return [] if antes != despues else [f"votos: el segundo navegador no vio el voto ({antes} → {despues})"]
 
 
 def main():
@@ -127,6 +162,7 @@ def main():
         fallas = []
         for nombre, (w, h) in TAMANOS.items():
             fallas += recorrer(navegador, nombre, w, h)
+        fallas += votos_entre_navegadores(navegador)
         navegador.close()
     for f in fallas:
         print("FALLA", f)

@@ -4,43 +4,14 @@ Recomendaciones: selector de algoritmo, hiperparámetros, Top-10 explicado y dia
 
 import html
 
-import numpy as np
 import streamlit as st
 
-from src.motor import ALGORITMOS, recomendar
+from src.motor import ALGORITMOS
 from src.perfil import MIN_LIKES, estado_requisitos
 from src.seleccion import CRITERIOS
 from src.ui import componentes as ui
 from src.ui import estado, graficas
-from src.ui.recursos import modelo
-
-
-@st.cache_data(max_entries=150, show_spinner=False)
-def calcular(algoritmo, L, D, params, post):
-    """
-    Corre el motor y conserva solo lo que la interfaz necesita (sin arreglos del catálogo).
-
-    inputs:
-    -------
-    algoritmo (str): llave de ALGORITMOS.
-    L (tuple): ids de me gusta.
-    D (tuple): ids de no me gusta.
-    params (dict): hiperparámetros.
-    post (dict): opciones de post-procesamiento.
-
-    outputs
-    -------
-    res (dict): ids, puntajes, explicaciones, ms y diagnóstico ligero.
-    """
-    r = recomendar(modelo(), algoritmo, list(L), list(D), params, post)
-    diag = {k: v for k, v in r["diagnostico"].items() if not isinstance(v, np.ndarray)}
-    if algoritmo == "naive_bayes":
-        d = r["diagnostico"]
-        orden = np.argsort(-np.abs(np.log(d["p_like"] / d["p_nolike"])))
-        diag["tabla_tokens"] = [(d["tokens"][j], float(d["p_like"][j]), float(d["p_nolike"][j]))
-                                for j in orden if d["visibles"][j]][:12]
-    return {"ids": r["ids"], "puntajes": r["puntajes"], "explicaciones": r["explicaciones"],
-            "ms": r["ms"], "diagnostico": diag}
+from src.ui.recursos import calcular, modelo
 
 
 def hiperparametros(algoritmo, n_perfil):
@@ -211,6 +182,9 @@ if d.get("n_pseudo"):
 if req["nivel"] == "mínimo":
     avisos.append(req["mensaje"])
 avisos += d.get("avisos", [])
+if st.session_state.get("pesos_mezcladora") and algoritmo in ("vecinos", "regresion"):
+    w = st.session_state.pesos_mezcladora
+    avisos.append("Usando los pesos de la Mezcladora: " + ", ".join(f"{b} {v:.2f}" for b, v in w.items()) + ".")
 for a in avisos:
     st.caption(f":material/info: {a}")
 

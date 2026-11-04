@@ -5,7 +5,7 @@ Constantes, rutas y parámetros compartidos por el pipeline y la app.
 from pathlib import Path
 
 APP_NAME = "Vibe Rhythming"
-URL_APP = "https://vibe-rhythming.streamlit.app"  # se actualiza al desplegar
+URL_APP = "https://vibe-rhythming-xa4bklbavofschuft6epuf.streamlit.app"
 
 RAIZ = Path(__file__).resolve().parent.parent
 DIR_RAW = RAIZ / "data" / "raw"

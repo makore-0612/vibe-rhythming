@@ -65,7 +65,7 @@ def main():
     for paso in (construir_catalogo, construir_features, evaluar_similares):
         print(f"== {paso.__name__}")
         paso.main()
-    print(f"== Artefactos")
+    print("== Artefactos")
     revisar_presupuesto()
     print(f"Pipeline completo en {time.time() - t0:.0f} s")
 

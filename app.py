@@ -58,6 +58,7 @@ paginas = [
     st.Page("paginas/tienda.py", title="Tienda", icon=":material/storefront:"),
     st.Page("paginas/recomendaciones.py", title="Recomendaciones", icon=":material/auto_awesome:"),
     st.Page("paginas/laboratorio.py", title="Laboratorio", icon=":material/science:"),
+    st.Page("paginas/comparador.py", title="Comparador", icon=":material/compare_arrows:"),
     st.Page("paginas/capitulo.py", title="El capítulo", icon=":material/menu_book:"),
 ]
 st.navigation(paginas, position="top").run()

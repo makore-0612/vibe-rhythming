@@ -9,7 +9,6 @@ import urllib.parse
 
 import streamlit as st
 
-from src import config as C
 from src.perfil import MIN_LIKES, estado_requisitos
 from src.ui import estado
 from src.ui.tema import AZUL_100, AZUL_300, AZUL_500, AZUL_700, AZUL_900, TINTA

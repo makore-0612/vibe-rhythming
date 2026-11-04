@@ -2,18 +2,29 @@
 Laboratorio: piezas interactivas del capítulo que usan la selección del usuario.
 """
 
+import json
+
 import numpy as np
 import pandas as pd
 import streamlit as st
 
+from src import config as C
 from src import seleccion
+from src.algoritmos import PESOS_DEFECTO
 from src.algoritmos import naive_bayes as nb
 from src.perfil import MIN_LIKES, armar_entrenamiento
 from src.ui import componentes as ui
 from src.ui import estado, graficas
-from src.ui.recursos import modelo
+from src.ui.recursos import calcular, modelo
 
-PESTANAS = ["La constante de Bayes", "¿Qué te delata?"]
+PESTANAS = ["La constante de Bayes", "Mezcladora", "¿Qué te delata?"]
+BLOQUES_UI = {"letra": "Letra", "etiquetas": "Etiquetas", "audio": "Audio", "usos": "Usos"}
+PRESETS = {
+    "Por defecto": PESOS_DEFECTO,
+    "Solo letra": {"letra": 1.0, "etiquetas": 0.0, "audio": 0.0, "usos": 0.0},
+    "Solo etiquetas": {"letra": 0.0, "etiquetas": 1.0, "audio": 0.0, "usos": 0.0},
+    "Solo audio": {"letra": 0.0, "etiquetas": 0.0, "audio": 1.0, "usos": 0.0},
+}
 
 
 @st.cache_data(max_entries=20, show_spinner=False)
@@ -144,6 +155,119 @@ def pestana_bayes(M, L, D):
                 f"log P(x) = {lx:.1f}. La suma de los aportes más el a priori da exactamente los log-momios.")
 
 
+@st.cache_data
+def evaluacion_offline():
+    """
+    Lee los resultados de la evaluación contra Similar Songs.
+
+    inputs:
+    -------
+    (ninguno)
+
+    outputs
+    -------
+    res (dict | None): contenido de eval_similares.json o None si no existe.
+    """
+    if not C.RUTA_EVAL_SIMILARES.exists():
+        return None
+    return json.loads(C.RUTA_EVAL_SIMILARES.read_text(encoding="utf-8"))
+
+
+def aplicar_preset(nombre):
+    """
+    Mueve todos los faders a un preajuste.
+
+    inputs:
+    -------
+    nombre (str): llave de PRESETS.
+
+    outputs
+    -------
+    (None)
+    """
+    st.session_state.pesos_mezcladora = dict(PRESETS[nombre])
+    for b, v in PRESETS[nombre].items():
+        st.session_state[f"mz_{b}"] = float(v)
+
+
+def mover_fader(b):
+    """
+    Copia el valor de un fader a los pesos compartidos con Recomendaciones.
+
+    inputs:
+    -------
+    b (str): bloque cuyo fader se movió.
+
+    outputs
+    -------
+    (None)
+    """
+    st.session_state.pesos_mezcladora[b] = st.session_state[f"mz_{b}"]
+
+
+def pestana_mezcladora(M, L, D):
+    """
+    Faders de peso por bloque con recomendaciones que cambian al instante.
+
+    inputs:
+    -------
+    M (dict): modelo cargado.
+    L (list): ids de me gusta.
+    D (list): ids de no me gusta.
+
+    outputs
+    -------
+    (None)
+    """
+    st.markdown("¿Qué pesa más en la sinopsis de *Shrek*: «pantano» o el actor? Aquí decides cuánto pesa "
+                "cada bloque de características en la similitud. Es la **ponderación de características** "
+                "(sección 4.3.4.5) hecha consola de sonido. Los pesos también se usan en Recomendaciones.")
+    pesos = st.session_state.setdefault("pesos_mezcladora", dict(PESOS_DEFECTO))
+    cols = st.columns(len(PRESETS))
+    for col, nombre in zip(cols, PRESETS):
+        col.button(nombre, on_click=aplicar_preset, args=(nombre,), width="stretch", key=f"preset_{nombre}")
+    faders = st.columns(4, gap="medium")
+    for col, (b, etiqueta) in zip(faders, BLOQUES_UI.items()):
+        if f"mz_{b}" not in st.session_state:
+            st.session_state[f"mz_{b}"] = float(pesos[b])
+        col.slider(etiqueta, 0.0, 1.0, step=0.05, key=f"mz_{b}", on_change=mover_fader, args=(b,))
+    total = sum(pesos.values()) or 1
+    st.html('<div class="vr-medidor">' + "".join(
+        f'<span>{BLOQUES_UI[b]} · <b>{pesos[b] / total:.0%}</b></span>'
+        f'<div class="vr-barra"><span style="width:{100 * pesos[b] / total:.0f}%"></span></div>'
+        for b in BLOQUES_UI) + "</div>")
+
+    algoritmo = st.segmented_control("Algoritmo", ["vecinos", "regresion"], default="vecinos", key="mz_alg",
+                                     format_func=lambda a: "Vecinos" if a == "vecinos" else "Regresión logística") or "vecinos"
+    post = {"diversidad": 0.0, "novedad": 0.0, "ocultar_explicitas": st.session_state.ocultar_explicitas}
+    res = calcular(algoritmo, tuple(L), tuple(D), {"pesos": dict(pesos)}, post)
+    base = calcular(algoritmo, tuple(L), tuple(D), {"pesos": dict(PESOS_DEFECTO)}, post)
+    pos_base = {i: k + 1 for k, i in enumerate(base["ids"])}
+    cat = M["cat"]
+    filas = []
+    for k, i in enumerate(res["ids"]):
+        antes = pos_base.get(i)
+        cambio = "nueva" if antes is None else ("=" if antes == k + 1 else (f"↑{antes - k - 1}" if antes > k + 1 else f"↓{k + 1 - antes}"))
+        filas.append({"#": k + 1, "Canción": cat.titulo[i], "Artista": cat.artista[i], "Género": cat.genero[i],
+                      "Contra pesos por defecto": cambio})
+    st.dataframe(pd.DataFrame(filas), hide_index=True, width="stretch")
+    nuevas = sum(1 for f in filas if f["Contra pesos por defecto"] == "nueva")
+    st.caption(f"{nuevas} de {len(filas)} canciones no estaban en la lista con los pesos por defecto · {res['ms']:.0f} ms")
+
+    ev = evaluacion_offline()
+    if ev:
+        with st.expander("¿Qué bloque se parece más a «Similar Songs» del dataset?"):
+            r = ev["resultados"]
+            st.markdown(
+                "Para " + f"{ev['n_origenes']:,}" + " canciones, buscamos en qué lugar del catálogo queda la canción "
+                "que el dataset marca como similar. Porcentaje que cae en el Top-10:")
+            st.dataframe(pd.DataFrame([{"Bloque": k, "Aciertos en Top-10": f"{v['aciertos@10']:.1%}",
+                                        "Rango mediano": v["rango_mediano"]} for k, v in r.items()]),
+                         hide_index=True, width="stretch")
+            st.caption("Solo con audio se recupera la mayoría: esa columna parece calculada con el audio. "
+                       "Es una referencia, no una verdad.")
+
+
 def pestana_delata(M, L, D):
     """
     Tabla de Gini, entropía, χ² y desviación normalizada calculada con la selección del usuario.
@@ -200,5 +324,7 @@ if st.session_state.get("lab_pestana") not in PESTANAS:
 pestana = st.segmented_control("Pestaña", PESTANAS, key="lab_pestana", label_visibility="collapsed") or PESTANAS[0]
 if pestana == "La constante de Bayes":
     pestana_bayes(M, L, D)
+elif pestana == "Mezcladora":
+    pestana_mezcladora(M, L, D)
 else:
     pestana_delata(M, L, D)

@@ -44,10 +44,11 @@ def diversidad(M, ids, pesos=None):
     return float(1 - S[iu].mean())
 
 
-def serendipia(M, ids, L, pesos=None, umbral_sim=0.35):
+def serendipia(M, ids, L, pesos=None):
     """
-    Aproximación de serendipia: fracción de la lista con baja similitud al perfil y con
-    artista o género que no aparecen entre los me gusta. Es una aproximación, no una medida exacta.
+    Aproximación de serendipia: para cada recomendación con artista o género que no están entre los
+    me gusta, mide qué tan inesperada es como 1 − percentil de su similitud con el perfil frente a una
+    muestra fija del catálogo; las demás cuentan 0. Es una aproximación, no una medida exacta.
 
     inputs:
     -------
@@ -55,19 +56,22 @@ def serendipia(M, ids, L, pesos=None, umbral_sim=0.35):
     ids (list): canciones recomendadas (ya con puntaje alto del modelo).
     L (list): ids de me gusta.
     pesos (dict): pesos de bloques.
-    umbral_sim (float): similitud máxima con el perfil para considerarla sorpresa.
 
     outputs
     -------
-    valor (float): fracción en [0, 1]; NaN si la lista está vacía.
+    valor (float): promedio en [0, 1]; NaN si la lista está vacía.
     """
     if not len(ids) or not len(L):
         return float("nan")
-    S = similitud_bloques(M, np.array(ids), np.array(L), normalizar_pesos(pesos)).max(1)
+    w = normalizar_pesos(pesos)
+    S = similitud_bloques(M, np.array(ids), np.array(L), w).max(1)
+    muestra = np.random.default_rng(0).choice(M["n"], size=min(2000, M["n"]), replace=False)
+    referencia = np.sort(similitud_bloques(M, muestra, np.array(L), w).max(1))
+    percentil = np.searchsorted(referencia, S) / len(referencia)
     artistas_l = {M["artista"][i] for i in L}
     generos_l = {M["genero"][i] for i in L}
     nuevo = np.array([(M["artista"][i] not in artistas_l) or (M["genero"][i] not in generos_l) for i in ids])
-    return float(np.mean((S < umbral_sim) & nuevo))
+    return float(np.mean(np.where(nuevo, 1 - percentil, 0.0)))
 
 
 def jaccard(a, b):
