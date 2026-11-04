@@ -1,33 +1,17 @@
 """
-Punto de entrada de la app: tema, carga de datos y navegación.
+Punto de entrada del servidor.
+
+`streamlit run app.py` detecta el st.App de abajo e importa este archivo al arrancar el servidor.
+Así el parche de gzip (bug de Streamlit 1.58 en Community Cloud, ver src/parche_streamlit.py) queda
+activo antes de servir el primer archivo de la interfaz. La app en sí vive en principal.py.
 
 Uso: streamlit run app.py
 """
 
-import streamlit as st
-
-from src import config as C
 from src import parche_streamlit
-from src.ui import estado
-from src.ui.recursos import modelo
-from src.ui.tema import aplicar_tema
 
-parche_streamlit.aplicar()  # bug de gzip de Streamlit 1.58 en Community Cloud; ver el módulo
+parche_streamlit.aplicar()
 
-st.set_page_config(page_title=C.APP_NAME, page_icon=":material/album:", layout="wide",
-                   initial_sidebar_state="collapsed")
+from streamlit.web.server.starlette import App  # noqa: E402
 
-
-aplicar_tema()
-estado.iniciar(modelo()["n"])
-estado.sincronizar_url()  # st.switch_page borra los parámetros; se reescriben en cada ejecución
-
-paginas = [
-    st.Page("paginas/inicio.py", title="Inicio", icon=":material/home:", default=True),
-    st.Page("paginas/tienda.py", title="Tienda", icon=":material/storefront:"),
-    st.Page("paginas/recomendaciones.py", title="Recomendaciones", icon=":material/auto_awesome:"),
-    st.Page("paginas/laboratorio.py", title="Laboratorio", icon=":material/science:"),
-    st.Page("paginas/comparador.py", title="Comparador", icon=":material/compare_arrows:"),
-    st.Page("paginas/capitulo.py", title="El capítulo", icon=":material/menu_book:"),
-]
-st.navigation(paginas, position="top").run()
+app = App("principal.py")
