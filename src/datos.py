@@ -64,6 +64,7 @@ def cargar_modelo():
     B, nombres_tok, es_letra = F.tokens_binarios(conteos, vocab["es_bigrama"], vocab["legible"], etiquetas,
                                                  vocab["etiquetas"], audio_crudo, cortes, usos, vocab["usos"])
     ocultas = F.cargar_ocultas(C.RUTA_PALABRAS_OCULTAS)
+    generos, conteo_generos = np.unique(cat["genero"].to_numpy(), return_counts=True)
     return {
         "cat": cat,
         "n": len(cat),
@@ -80,6 +81,9 @@ def cargar_modelo():
         "visible_tok": np.array([F.es_visible(t, ocultas) for t in nombres_tok]),
         "visible_letra": np.array([F.es_visible(t, ocultas) for t in vocab["legible"]]),
         "ocultas": ocultas,
+        "visible_col": {b: np.array([F.es_visible(n, ocultas) for n in nombres]) for b, nombres in nombres_col.items()},
+        "generos_unicos": generos,
+        "conteo_generos": conteo_generos,
         "cortes_audio": cortes,
         "explicita": cat["explicita"].to_numpy(dtype=bool),
         "popularidad": cat["popularidad"].to_numpy(dtype=np.float32),

@@ -13,7 +13,6 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.svm import LinearSVC
 
 from src.algoritmos import normalizar_pesos
-from src.features import es_visible
 
 
 def matriz_ponderada(M, pesos):
@@ -30,13 +29,23 @@ def matriz_ponderada(M, pesos):
     X (scipy.sparse.csr_matrix): matriz (n, n_caracteristicas).
     nombres (list): nombre legible de cada columna.
     """
+    # Unos 24 MB por combinación de pesos: se guardan las últimas 4 en el propio modelo,
+    # compartidas entre sesiones, en lugar de reconstruirlas en cada llamada.
+    cache = M.setdefault("_cache_matriz_ponderada", {})
+    clave = tuple(round(pesos[b], 6) for b in sorted(pesos))
+    if clave in cache:
+        return cache[clave]
     partes, nombres = [], []
     for b, w in pesos.items():
         X = M["crudos"][b]
         X = sp.csr_matrix(X) if not sp.issparse(X) else X
         partes.append(X * np.float32(np.sqrt(w)))
         nombres += M["nombres_col"][b]
-    return sp.hstack(partes, format="csr"), nombres
+    resultado = (sp.hstack(partes, format="csr"), nombres)
+    if len(cache) >= 4:
+        cache.pop(next(iter(cache)), None)
+    cache[clave] = resultado
+    return resultado
 
 
 def puntuar(M, ent, params):
@@ -70,7 +79,7 @@ def puntuar(M, ent, params):
         modelo.fit(X[ids], y, sample_weight=w)
     coef = modelo.coef_.ravel()
     puntajes = np.asarray(X @ coef).ravel() + modelo.intercept_[0]
-    visibles = np.array([es_visible(n, M["ocultas"]) for n in nombres])
+    visibles = np.concatenate([M["visible_col"][b] for b in pesos])
 
     def explicar(lista):
         """

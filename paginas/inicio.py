@@ -93,7 +93,7 @@ with c1:
 with c2:
     st.markdown("#### Créditos")
     st.markdown(
-        "**Nadia, Ángel y Karen** · Licenciatura en Ciencia de Datos, IIMAS, UNAM.\n\n"
+        "**Castrillo Cruz Karen Arlet, Ramos González Nadia, Zamora Antiga Ángel Javier.** · Licenciatura en Ciencia de Datos, IIMAS, UNAM.\n\n"
         "Basado en el capítulo 4, *Content-Based Recommender Systems*, de "
         "Charu C. Aggarwal, *Recommender Systems: The Textbook*, Springer, 2016.\n\n"
         "Datos: *500K+ Spotify Songs with Lyrics, Emotions & More*, de DevDope "

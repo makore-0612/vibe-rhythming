@@ -53,7 +53,7 @@ def pseudo_negativos(M, L, D):
     rng = np.random.default_rng(semilla_de(list(L) + [-1] + list(D)))
     excluir = np.zeros(M["n"], dtype=bool)
     excluir[list(L) + list(D)] = True
-    generos, conteo = np.unique(M["genero"], return_counts=True)
+    generos, conteo = M["generos_unicos"], M["conteo_generos"]
     cuotas = np.floor(faltan * conteo / conteo.sum()).astype(int)
     # El resto se reparte entre los géneros más grandes.
     for j in np.argsort(-conteo)[: faltan - cuotas.sum()]:
