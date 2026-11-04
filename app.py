@@ -49,9 +49,9 @@ def logo_combinado():
 aplicar_tema()
 estado.iniciar(modelo()["n"])
 estado.sincronizar_url()  # st.switch_page borra los parámetros; se reescriben en cada ejecución
-logo = logo_combinado()
-if logo is not None:
-    st.logo("assets/logoinst.png", size="large")
+#logo = logo_combinado()
+#if logo is not None:
+st.logo("assets/logoinst.png", size="large")
 
 paginas = [
     st.Page("paginas/inicio.py", title="Inicio", icon=":material/home:", default=True),
